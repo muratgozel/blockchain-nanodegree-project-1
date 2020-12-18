@@ -71,7 +71,7 @@ class Blockchain {
           const isGenesisBlock = self.height === -1;
 
           block.time = parseInt(new Date().getTime().toString().slice(0,-3));
-          block.hash = SHA256(block.body);
+          block.hash = SHA256(block.body).toString();
 
           if (!isGenesisBlock) {
             const lastBlock = self.chain[self.height];
@@ -82,7 +82,13 @@ class Blockchain {
           self.chain.push(block);
           self.height += 1;
 
-          return resolve(block);
+          self.validateChain().then(function(errorLog) {
+            if (errorLog.length > 0) {
+              return reject(new Error('Chain validation failed.'));
+            }
+
+            return resolve(block);
+          });
         });
     }
 
@@ -203,14 +209,19 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
           const promises = self.chain.map(function(block, i) {
             return new Promise(function(res, rej) {
+              if (block.height === 0) {
+                // genesis block!
+                return res();
+              }
+
               block.validate().then(function(validBlock) {
                 if (!validBlock) {
-                  errorLog.push(new Error('The block #' + block.height + ' is invalid.'));
+                  errorLog.push({error: {msg: 'The block #' + block.height + ' is invalid.'}});
                   return res();
                 }
 
-                if (block.height > 1 && block.previousBlockHash != self.chain[i-1].hash) {
-                  errorLog.push(new Error('The block #' + block.height + ' is invalid.'));
+                if (block.previousBlockHash != self.chain[i-1].hash) {
+                  errorLog.push({error: {msg: 'The block #' + block.height + ' is invalid.'}});
                 }
 
                 return res();

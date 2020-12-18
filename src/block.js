@@ -44,7 +44,7 @@ class Block {
             // Recalculate the hash of the Block
             // Comparing if the hashes changed
             // Returning the Block is not valid
-            const actualHash = SHA256(self.body);
+            const actualHash = SHA256(self.body).toString();
 
             // Returning the Block is valid
             return resolve(actualHash == currentHash);
